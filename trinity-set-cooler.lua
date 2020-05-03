@@ -1,6 +1,6 @@
 script_name('Trinity Set Cooler')
 script_author('Akionka')
-script_version('1.0.0')
+script_version('1.1.0')
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -13,10 +13,13 @@ local state = 0 --[[
   1 = Take a bottle
   2 = Setup a bottle
   3 = Close inventory
+  4 = Buy bottles
+  5 = Close talk dialog
 ]]
+local amountOfBuyableBottles = 0
+local amountOfBuyedBottles = 0
 
 function sampev.onShowDialog(id, style, title, btn1, btn2, text)
-  print(id, style, title, btn1, btn2, text)
   if id == 999 then
     if text == u8:decode('{afafaf}В этом кулере еще не закончилась вода.') then
       state = 3
@@ -72,6 +75,55 @@ function sampev.onShowDialog(id, style, title, btn1, btn2, text)
       sampSendDialogResponse(id, 0, 0, '')
       return false
     end
+  elseif id == 5400 then
+    if state == 4 then
+      sampSendDialogResponse(id, 1, 0, '')
+      return false
+    end
+  elseif id == 5401 then
+    if state == 4 then
+      sampSendDialogResponse(id, 1, 4, '')
+      return false
+    elseif state == 5 then
+      state = 0
+      sampSendDialogResponse(id, 0, 0, '')
+      return false
+    end
+  elseif id == 5402 then
+    if state == 4 then
+      if text:find(u8:decode('Куда же вы её положите%?')) then
+        msg('Нет места для большего количества бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей')
+        state = 5
+        amountOfBuyableBottles = 0
+        amountOfBuyedBottles = 0
+        sampSendDialogResponse(id, 1, 0, '')
+        return false
+      elseif text:find(u8:decode('Этого недостаточно%. Бутыль стоит {33aa33}%d+ %${ffffff}%.')) then
+        msg('Не хватает денег на покупку бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей')
+        state = 5
+        amountOfBuyableBottles = 0
+        amountOfBuyedBottles = 0
+        sampSendDialogResponse(id, 1, 0, '')
+        return false
+      end
+    end
+  elseif id == 5403 then
+    if state == 4 then
+      amountOfBuyableBottles = amountOfBuyableBottles - 1
+      sampSendDialogResponse(id, 1, 0, '')
+      return false
+    end
+  elseif id == 5404 then
+    if state == 4 then
+      amountOfBuyedBottles = amountOfBuyedBottles + 1
+      if amountOfBuyableBottles == 0 then
+        state = 0
+        sampSendDialogResponse(id, 0, 0, '')
+        return false
+      end
+      sampSendDialogResponse(id, 1, 0, '')
+      return false
+    end
   end
 end
 
@@ -91,11 +143,30 @@ function main()
     sampSendChat('/invex')
   end)
 
+  sampRegisterChatCommand('bb', function(params)
+    if getActiveInterior() ~= 1 and not isCharInArea3d(PLAYER_PED, 1793, 751, 1498, 1801, 739, 1510, false) then
+      msg('Вы не в магазине воды. Езжайте туда: /gps 27')
+    end
+    if not isCharInArea3d(PLAYER_PED, 1793, 741, 1500, 1798, 747, 15010) then
+      msg('Подойдите ближе к продавцу воды')
+    end
+    params = trim(params)
+    if #params == 0 then amountOfBuyableBottles = -1
+    else amountOfBuyableBottles = tonumber(params) end
+    amountOfBuyedBottles = 0
+    state = 4
+    sampSendChat('/talk')
+  end)
+
   while true do
     wait(0)
    end
 end
 
 function msg(text)
-  sampAddChatMessage(u8:decode('['..prefix..']: '..text), -1)
+  sampAddChatMessage(u8:decode('{FFFFFF}['..prefix..']: '..text), -1)
+end
+
+function trim(s)
+  return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
 end
