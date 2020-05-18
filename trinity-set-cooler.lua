@@ -19,8 +19,10 @@ local state = 0 --[[
 local amountOfBuyableBottles = 0
 local amountOfBuyedBottles = 0
 local emptyCoolers = {}
+local autoSetupCooler = false
 
 function sampev.onSetObjectMaterialText(id, text)
+  if not autoSetupCooler then return end
   if text.fontColor == -14535885 and text.backGroundColor == -8942705 then
     if text.text:find('empty') and emptyCoolers[id] == nil then
       local res, cX, cY, cZ = getObjectCoordinates(sampGetObjectHandleBySampId(id))
@@ -39,6 +41,7 @@ function sampev.onSetObjectMaterialText(id, text)
 end
 
 function sampev.onDestroyObject(id)
+  if not autoSetupCooler then return end
   if emptyCoolers[id] ~= nil then emptyCoolers[id]:terminate() emptyCoolers[id] = nil end
 end
 
@@ -175,6 +178,11 @@ function main()
     amountOfBuyedBottles = 0
     state = 4
     sampSendChat('/talk')
+  end)
+
+  sampRegisterChatCommand('coolering', function()
+    autoSetupCooler = not autoSetupCooler
+    printStringNow(autoSetupCooler and '~g~on' or '~r~off',1000)
   end)
 
   while true do
