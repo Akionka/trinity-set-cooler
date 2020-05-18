@@ -20,6 +20,8 @@ local amountOfBuyableBottles = 0
 local amountOfBuyedBottles = 0
 local emptyCoolers = {}
 local autoSetupCooler = false
+local spentMoney = 0
+local bottleCost = 0
 
 function sampev.onSetObjectMaterialText(id, text)
   if not autoSetupCooler then return end
@@ -118,14 +120,14 @@ function sampev.onShowDialog(id, style, title, btn1, btn2, text)
   elseif id == 5402 then
     if state == 4 then
       if text:find(u8:decode('Куда же вы её положите%?')) then
-        msg('Нет места для большего количества бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей')
+        msg('Нет места для большего количества бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей за {33aa33}'..spentMoney..' ${ffffff}.')
         state = 5
         amountOfBuyableBottles = 0
         amountOfBuyedBottles = 0
         sampSendDialogResponse(id, 1, 0, '')
         return false
       elseif text:find(u8:decode('Этого недостаточно%. Бутыль стоит {33aa33}%d+ %${ffffff}%.')) then
-        msg('Не хватает денег на покупку бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей')
+        msg('Не хватает денег на покупку бутылей. Всего куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей за {33aa33}'..spentMoney..' ${ffffff}.')
         state = 5
         amountOfBuyableBottles = 0
         amountOfBuyedBottles = 0
@@ -134,6 +136,7 @@ function sampev.onShowDialog(id, style, title, btn1, btn2, text)
       end
     end
   elseif id == 5403 then
+    bottleCost = text:match(u8:decode('{33aa33}(%d+) %${ffffff}'))
     if state == 4 then
       amountOfBuyableBottles = amountOfBuyableBottles - 1
       sampSendDialogResponse(id, 1, 0, '')
@@ -141,8 +144,10 @@ function sampev.onShowDialog(id, style, title, btn1, btn2, text)
     end
   elseif id == 5404 then
     if state == 4 then
+      spentMoney = spentMoney + bottleCost
       amountOfBuyedBottles = amountOfBuyedBottles + 1
       if amountOfBuyableBottles == 0 then
+        msg('Куплено {9932cc}'..amountOfBuyedBottles..'{FFFFFF} бутылей за {33aa33}'..spentMoney..' ${ffffff}.')
         state = 0
         sampSendDialogResponse(id, 0, 0, '')
         return false
@@ -177,6 +182,7 @@ function main()
     else amountOfBuyableBottles = tonumber(params) end
     amountOfBuyedBottles = 0
     state = 4
+    spentMoney = 0
     sampSendChat('/talk')
   end)
 
