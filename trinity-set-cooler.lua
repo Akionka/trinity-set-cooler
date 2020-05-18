@@ -1,6 +1,6 @@
 script_name('Trinity Set Cooler')
 script_author('Akionka')
-script_version('1.1.0')
+script_version('1.2.0')
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -18,6 +18,29 @@ local state = 0 --[[
 ]]
 local amountOfBuyableBottles = 0
 local amountOfBuyedBottles = 0
+local emptyCoolers = {}
+
+function sampev.onSetObjectMaterialText(id, text)
+  if text.fontColor == -14535885 and text.backGroundColor == -8942705 then
+    if text.text:find('empty') and emptyCoolers[id] == nil then
+      local res, cX, cY, cZ = getObjectCoordinates(sampGetObjectHandleBySampId(id))
+      emptyCoolers[id] = lua_thread.create(function()
+        while true do
+          wait(0)
+          local pX, pY, pZ = getCharCoordinates(PLAYER_PED)
+          if getDistanceBetweenCoords3d(pX, pY, pZ, cX, cY, cZ) < 1 then
+            setUpCooler()
+            return
+          end
+        end
+      end)
+    end
+  end
+end
+
+function sampev.onDestroyObject(id)
+  if emptyCoolers[id] ~= nil then emptyCoolers[id]:terminate() emptyCoolers[id] = nil end
+end
 
 function sampev.onShowDialog(id, style, title, btn1, btn2, text)
   if id == 999 then
@@ -137,11 +160,7 @@ function main()
     thisScript():unload()
   end
 
-  sampRegisterChatCommand('sc', function()
-    state = 1
-    sampSendChat('/hands')
-    sampSendChat('/invex')
-  end)
+  sampRegisterChatCommand('sc', setUpCooler)
 
   sampRegisterChatCommand('bb', function(params)
     if getActiveInterior() ~= 1 and not isCharInArea3d(PLAYER_PED, 1793, 751, 1498, 1801, 739, 1510, false) then
@@ -161,6 +180,12 @@ function main()
   while true do
     wait(0)
    end
+end
+
+function setUpCooler()
+  state = 1
+  sampSendChat('/hands')
+  sampSendChat('/invex')
 end
 
 function msg(text)
