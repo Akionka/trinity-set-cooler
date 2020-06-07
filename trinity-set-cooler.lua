@@ -1,6 +1,6 @@
 script_name('Trinity Set Cooler')
 script_author('Akionka')
-script_version('1.2.0')
+script_version('1.2.1')
 
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
@@ -171,11 +171,14 @@ function main()
   sampRegisterChatCommand('sc', setUpCooler)
 
   sampRegisterChatCommand('bb', function(params)
-    if getActiveInterior() ~= 1 and not isCharInArea3d(PLAYER_PED, 1793, 751, 1498, 1801, 739, 1510, false) then
+    if getActiveInterior() ~= 14 and not isCharInArea3d(PLAYER_PED, -2222, 488, 2160, -2210, 477, 2170, false) then
       msg('Вы не в магазине воды. Езжайте туда: /gps 27')
+      return
     end
-    if not isCharInArea3d(PLAYER_PED, 1793, 741, 1500, 1798, 747, 15010) then
+    local x, y, z = getCharCoordinates(PLAYER_PED)
+    if getDistanceBetweenCoords3d(x, y, z, -2220, 480, 2165) > 10 then
       msg('Подойдите ближе к продавцу воды')
+      return
     end
     params = trim(params)
     if #params == 0 then amountOfBuyableBottles = -1
